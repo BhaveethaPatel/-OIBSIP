@@ -1,0 +1,67 @@
+import wikipedia
+import pyttsx3
+from datetime import datetime
+import speech_recognition as sr
+
+
+def speak(response):
+    """Convert text to speech"""
+    engine = pyttsx3.init()
+    engine.setProperty("rate", 180)
+    engine.say(response)
+    engine.runAndWait()
+
+
+def listen_for_command():
+    """Capture voice input and convert to text"""
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        speak("Hello, I am your voice assistant! How can I help you?")
+        print("Listening for commands...")
+        recognizer.adjust_for_ambient_noise(source)
+        audio = recognizer.listen(source)
+
+    try:
+        command = recognizer.recognize_google(audio).lower()
+        print("You said:", command)
+        return command
+    except sr.UnknownValueError:
+        speak("Sorry, I didn't catch that. Please repeat.")
+        return None
+    except sr.RequestError:
+        speak("There was an error connecting to the speech service.")
+        return None
+
+
+def web_search(query):
+    """Fetch summary from Wikipedia"""
+    try:
+        return wikipedia.summary(query, sentences=2)
+    except wikipedia.exceptions.DisambiguationError as e:
+        return f"Multiple results found: {e.options[:3]}"
+    except wikipedia.exceptions.PageError:
+        return "Sorry, no results found on Wikipedia."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+def main():
+    """Main function to process voice commands"""
+    while True:
+        request = listen_for_command()
+        if request:
+            if "hello" in request:
+                speak("Hello, how can I assist you?")
+            elif "time" in request:
+                current_time = datetime.now().strftime("%I:%M %p")
+                speak(f"The current time is {current_time}")
+            elif "exit" in request or "stop" in request:
+                speak("Goodbye! Have a great day.")
+                break
+            else:
+                response = web_search(request)
+                speak(response)
+
+
+if __name__ == "__main__":
+    main()
